@@ -9,10 +9,9 @@
 
 #include <SDL2/SDL.h>
 #include <string>
-#include <vector>
-#include <queue>
 #include <deque>
 #include <memory>
+#include <mutex>
 
 namespace simp {
 
@@ -48,6 +47,7 @@ public:
     }
 
     bool add(const std::string& text) {
+        std::scoped_lock(this->mutex);
         const auto id = SDL_AddTimer(3000, timerCallback, this);
         if (id == 0) {
             return false;
@@ -61,6 +61,7 @@ public:
 
     // this looks like 5am code yet its only 6pm.
     void render(void) {
+        std::scoped_lock(this->mutex);
         int y{0};
         for (auto& p: this->entries) {
             // ignoring the rest because, i'll do it tomorrow
@@ -73,6 +74,7 @@ public:
 private:
     std::unique_ptr<Font> font;
     std::deque<PopUpEntry> entries;
+    std::mutex mutex; // might fix race conditions
     int y_pos{0};
     int font_size{0};
 
@@ -88,8 +90,9 @@ private:
     // actually the slide might not work well for *very* long popups
     // probably will just fade it out then...
     u32 onTimer(u32 interval) {
-        printf("TIMER\n");
+        std::scoped_lock(this->mutex);
         this->entries.pop_front();
+        // stop the timer.
         return 0;
     }
 };
