@@ -20,7 +20,7 @@ struct PopUpEntry {
     std::string text{"oof"};
     Colour text_colour{0xFF,0xFF,0xFF,200};
     Colour box_colour{0,0,0,200};
-    Align align{Align::RIGHT};
+    Align align{Align::LEFT};
     SDL_TimerID timer_id{0};
 };
 
@@ -36,12 +36,13 @@ struct PopUpEntry {
 // TODO: fix ^^ tomorrow.
 class Popup {
 public:
-    Popup(SDL_Renderer* renderer, const std::string& font_path, int font_size) {
-        this->font = std::make_unique<Font>(renderer, font_path, font_size);
-        //this->font.load(renderer, font_path, font_size);
+    Popup(SDL_Renderer* renderer, const std::string& font_path, int _font_size) {
+        this->font = std::make_unique<Font>(renderer, font_path, _font_size);
+        this->font_size = _font_size;
     }
     ~Popup() {
         for (auto& p: this->entries) {
+            // timer might not've expired, so we manually remove it
             SDL_RemoveTimer(p.timer_id);
         }
     }
@@ -65,13 +66,15 @@ public:
             // ignoring the rest because, i'll do it tomorrow
             this->font->drawTextBox(Vec2(0, y), p.text,
                 p.text_colour, p.box_colour);
-            y += 35;
+            // font + rect_padding + padding
+            y += this->font_size + 5 + 5;
         }
     }
 private:
     std::unique_ptr<Font> font;
     std::deque<PopUpEntry> entries;
     int y_pos{0};
+    int font_size{0};
 
     static u32 timerCallback(u32 interval, void* param) {
         return static_cast<Popup*>(param)->onTimer(interval);
